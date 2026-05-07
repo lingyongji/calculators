@@ -1,0 +1,1456 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>房贷计算器</title>
+    <style>
+      :root {
+        --bg0: #f3f7f2;
+        --bg1: #e9f0e8;
+        --card: #ffffff;
+        --text: #1d2a22;
+        --muted: #6a7b70;
+        --line: #d6e2d8;
+        --table-line: #d6e2d8;
+        --accent: #2c7a58;
+        --accent-2: #1f5f45;
+        --radius: 8px;
+        --shadow: 0 8px 28px rgba(44, 122, 88, 0.08);
+        --thead-row1-h: 38px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        overflow-x: hidden;
+      }
+
+      body {
+        margin: 0;
+        color: var(--text);
+        font-size: large;
+        font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        background:
+          radial-gradient(1200px 500px at 10% -10%, #dcebdc 0%, transparent 70%), radial-gradient(1000px 400px at 100% 0%, #d7e8df 0%, transparent 65%), linear-gradient(180deg, var(--bg0), var(--bg1));
+        min-height: 100vh;
+      }
+
+      .wrap {
+        width: min(1920px, 100%);
+        margin: 20px auto;
+        padding: 0 12px 24px;
+      }
+
+      .card {
+        background: color-mix(in srgb, var(--card) 92%, #f2f7f2 8%);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        padding: 14px;
+        margin-bottom: 12px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(20px, 2.6vw, 30px);
+        line-height: 1.2;
+        letter-spacing: 0.5px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+
+      .rate-plan-layout {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .rate-editor {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .editor-inputs {
+        display: grid;
+        gap: 8px;
+      }
+      .editor-inputs label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .editor-inputs label input {
+        width: min(210px, 56%);
+        min-width: 130px;
+      }
+      .editor-input.has-value {
+        border-color: #5aa779;
+        background: #eef9f2;
+        box-shadow: inset 0 0 0 1px rgba(90, 167, 121, 0.2);
+      }
+      .modal-backdrop[hidden] {
+        display: none;
+      }
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(16, 24, 20, 0.45);
+        z-index: 50;
+        display: grid;
+        place-items: center;
+        padding: 14px;
+      }
+      .modal-card {
+        width: min(780px, 100%);
+        max-height: min(78vh, 760px);
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: 0 22px 70px rgba(17, 36, 25, 0.22);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        overflow: hidden;
+      }
+      .modal-head,
+      .modal-foot {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .modal-head-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .modal-head-note {
+        color: var(--muted);
+        white-space: nowrap;
+        font-weight: bold;
+      }
+      .modal-foot {
+        border-top: 1px solid var(--line);
+        border-bottom: 0;
+      }
+      .modal-body {
+        overflow: auto;
+        padding: 12px;
+        display: grid;
+        gap: 8px;
+      }
+      .icon-btn {
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        border-radius: 4px;
+        display: inline-grid;
+        place-items: center;
+        font-size: 14px;
+        line-height: 1;
+        background: transparent;
+        color: #4f6558;
+        border: 0;
+      }
+
+      .ym-picker {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        flex: 1;
+      }
+      .first-month-inline {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        color: var(--muted);
+        font-size: inherit;
+        font-weight: 600;
+      }
+
+      input,
+      select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        padding: 9px 10px;
+        font-size: inherit;
+        color: var(--text);
+        background: #fff;
+        outline: none;
+      }
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(44, 122, 88, 0.12);
+      }
+
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: var(--radius);
+        padding: 9px 14px;
+        font-size: inherit;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+        filter: grayscale(18%);
+      }
+
+      .kpi {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px;
+      }
+
+      .k {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        padding: 10px;
+        color: var(--muted);
+        font-size: inherit;
+      }
+
+      .k b {
+        display: block;
+        margin-top: 6px;
+        color: var(--accent-2);
+        font-size: 21px;
+        line-height: 1.2;
+      }
+
+      .table-wrap {
+        width: 100%;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: #fff;
+        max-height: 72vh;
+        scrollbar-gutter: stable;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: inherit;
+        white-space: nowrap;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .result-table {
+        table-layout: fixed;
+        width: 100%;
+        background: #fff;
+        box-shadow: 0 0 0 1px var(--table-line);
+      }
+
+      .result-table-wrap {
+        border: 0;
+        background: transparent;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+
+      .result-table th,
+      .result-table td {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        line-height: normal;
+      }
+
+      thead th {
+        position: sticky;
+        z-index: 2;
+        background: #edf5ef !important;
+        border-bottom: 0;
+        border-right: 1px solid var(--table-line) !important;
+        font-weight: 700;
+        background-clip: padding-box;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      thead tr:first-child th {
+        top: 0;
+        background: #dfeee2 !important;
+        color: #244734;
+        box-shadow: inset 0 -1px 0 var(--table-line);
+        z-index: 4;
+        height: var(--thead-row1-h);
+        line-height: var(--thead-row1-h);
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      thead tr:nth-child(2) th {
+        top: var(--thead-row1-h);
+        background: #eff6f0 !important;
+        color: #345a45;
+        font-weight: 600;
+        box-shadow: inset 0 -1px 0 var(--table-line);
+        z-index: 3;
+        height: 34px;
+        line-height: 34px;
+        padding-top: 0;
+        padding-bottom: 0;
+      }
+      thead th[rowspan='2'] {
+        background: #dfeee2;
+      }
+      thead th[colspan] {
+        letter-spacing: 0.3px;
+      }
+      thead th.h-divider {
+        position: sticky;
+      }
+
+      th,
+      td {
+        text-align: right;
+        border-bottom: 1px solid var(--table-line);
+        border-right: 1px solid var(--table-line);
+        padding: 7px 6px;
+        vertical-align: middle;
+      }
+      th:last-child,
+      td:last-child {
+        padding-right: 24px;
+      }
+      tbody tr.changed-row td {
+        background: #fff5d8;
+      }
+      tbody tr.current-month-row td {
+        background: #e8f5ff;
+      }
+      tbody tr.current-month-row td:first-child {
+        background: #e8f5ff;
+      }
+      tbody tr td.changed-cell {
+        background: #ffe08a !important;
+        font-weight: 700;
+        color: #5a3b00;
+      }
+
+      tbody tr td.extra-balance-cell {
+        background: #ffe08a !important;
+        color: #5a3b00;
+        font-weight: 700;
+      }
+
+      td:first-child {
+        text-align: left;
+        position: sticky;
+        left: 0;
+        background: #fff;
+        border-left: 1px solid var(--table-line);
+        z-index: 1;
+      }
+
+      .result-table thead tr:first-child th:first-child {
+        border-left: 1px solid var(--table-line);
+      }
+
+      .result-table tbody td {
+        text-align: right;
+        vertical-align: middle;
+        padding-right: 10px;
+      }
+
+      .result-table tbody td:first-child {
+        text-align: center;
+        padding-right: 6px;
+      }
+
+      .result-table tbody td.repay-month {
+        color: #244734;
+        font-weight: 600;
+        cursor: default;
+      }
+      .result-table tbody td.repay-month:hover {
+        cursor: pointer;
+      }
+      .repay-month-main {
+        display: block;
+      }
+
+      .month-header-toggle {
+        cursor: pointer;
+        user-select: none;
+      }
+
+      .month-header-main {
+        display: block;
+      }
+
+      .result-table thead tr:first-child th {
+        text-align: center;
+      }
+
+      .result-table thead tr:nth-child(2) th {
+        text-align: right;
+        padding-right: 10px;
+      }
+
+      .result-table thead th[rowspan='2'] {
+        text-align: center;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .result-table thead tr:nth-child(2) th.key-col {
+        color: #244734;
+        font-weight: 700;
+      }
+
+      thead tr:first-child th:first-child,
+      thead tr:first-child th:nth-child(2) {
+        z-index: 5;
+      }
+
+      @media (max-width: 768px) {
+        .wrap {
+          padding: 0 8px 16px;
+          margin: 12px auto;
+        }
+        .card {
+          padding: 10px;
+        }
+        .rate-plan-layout {
+          grid-template-columns: 1fr;
+        }
+        table {
+          font-size: inherit;
+        }
+        .table-wrap {
+          max-height: 65vh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        <h1>房贷计算器</h1>
+
+        <div class="grid">
+          <label
+            >总期数（月）
+            <input id="months" type="number" min="1" />
+          </label>
+          <label
+            >首期年月
+            <input id="firstMonth" type="hidden" />
+            <div class="first-month-inline">
+              <div class="ym-picker" id="firstMonthPicker">
+                <select class="ym-year"></select>
+                <select class="ym-month"></select>
+              </div>
+            </div>
+          </label>
+          <label
+            >还款方式
+            <select id="repaymentMethod">
+              <option value="equalInstallment">等额本息</option>
+              <option value="equalPrincipal">等额本金</option>
+            </select>
+          </label>
+          <label
+            >商贷年利率（%）
+            <input id="rateCommercial" type="number" step="0.01" />
+          </label>
+          <label
+            >商业贷款
+            <input id="balCommercial" type="number" step="0.01" />
+          </label>
+          <label
+            >公积金年利率（%）
+            <input id="rateFund" type="number" step="0.01" />
+          </label>
+          <label
+            >公积金贷款
+            <input id="balFund" type="number" step="0.01" />
+          </label>
+          <label
+            >参数文件名
+            <input id="paramsFileName" type="text" placeholder="mortgage-params.json" />
+          </label>
+        </div>
+
+        <div class="actions">
+          <button id="calcBtn">重新计算</button>
+          <button id="exportExcelBtn" type="button" disabled>导出报表 Excel</button>
+          <button id="saveParamsBtn" type="button">保存参数 JSON</button>
+          <button id="loadParamsBtn" type="button">加载参数 JSON</button>
+          <input id="loadParamsInput" type="file" accept="application/json,.json" hidden />
+        </div>
+      </div>
+
+      <div class="card kpi" id="kpi"></div>
+
+      <div class="card">
+        <div class="table-wrap result-table-wrap">
+          <table class="result-table">
+            <thead id="resultHead"></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div id="monthPlanModal" class="modal-backdrop" hidden>
+      <div class="modal-card">
+        <div class="modal-head">
+          <div class="modal-head-main">
+            <div class="ym-picker" id="modalMonthPicker">
+              <select class="ym-year"></select>
+              <select class="ym-month"></select>
+            </div>
+            <div class="modal-head-note">计划变更</div>
+          </div>
+          <button id="monthPlanModalCloseTop" class="icon-btn" type="button" aria-label="关闭">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="rate-plan-layout">
+            <div class="rate-editor">
+              <h4 style="margin: 0">利率调整计划</h4>
+              <div class="editor-inputs">
+                <label>商贷利率（%）<input id="rateEditCommercial" class="editor-input" type="number" step="0.01" placeholder="例如 4.50" /></label>
+                <label>公积金利率（%）<input id="rateEditFund" class="editor-input" type="number" step="0.01" placeholder="例如 3.10" /></label>
+              </div>
+            </div>
+            <div class="rate-editor">
+              <h4 style="margin: 0">提前还款计划</h4>
+              <div class="editor-inputs">
+                <label>商贷金额<input id="extraEditCommercial" class="editor-input" type="number" min="0" step="0.01" placeholder="例如 10000" /></label>
+                <label>公积金金额<input id="extraEditFund" class="editor-input" type="number" min="0" step="0.01" placeholder="例如 5000" /></label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <div class="actions" style="margin: 0">
+            <button id="saveMonthPlanBtn" type="button">保存</button>
+            <button id="removeMonthPlanBtn" type="button">删除</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let showMonthDate = true
+      let ratePlanCalendarYear = new Date().getFullYear()
+      let selectedRatePlanYm = ''
+      const ratePlanMap = new Map()
+      let selectedExtraPlanYm = ''
+      const extraPlanMap = new Map()
+
+      function round2(n) {
+        return fromCents(toCents(n))
+      }
+
+      function toCents(n) {
+        const value = Number(n) || 0
+        const sign = value < 0 ? -1 : 1
+        return sign * Math.round((Math.abs(value) + 1e-9) * 100)
+      }
+
+      function fromCents(cents) {
+        return cents / 100
+      }
+
+      function pmt(rate, nper, pv) {
+        if (rate === 0) return -(pv / nper)
+        const x = Math.pow(1 + rate, nper)
+        return -(pv * rate * x) / (x - 1)
+      }
+
+      function calcLoanPeriod(method, balanceCents, annualRate, remainMonths) {
+        if (balanceCents <= 0 || remainMonths <= 0) {
+          return { paymentCents: 0, interestCents: 0, principalCents: 0 }
+        }
+
+        const balance = fromCents(balanceCents)
+        const interestCents = toCents((annualRate / 12) * balance)
+        if (method === 'equalPrincipal') {
+          const principalCents = Math.min(balanceCents, toCents(balance / remainMonths))
+          return {
+            paymentCents: principalCents + interestCents,
+            interestCents,
+            principalCents,
+          }
+        }
+
+        const rawPaymentCents = toCents(-pmt(annualRate / 12, remainMonths, balance))
+        const paymentCents = Math.min(rawPaymentCents, balanceCents + interestCents)
+        return {
+          paymentCents,
+          interestCents,
+          principalCents: Math.min(balanceCents, Math.max(0, paymentCents - interestCents)),
+        }
+      }
+
+      function fmt(n) {
+        return Number(n).toLocaleString('zh-CN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })
+      }
+
+      function fmtPct(n) {
+        return `${(Number(n) * 100).toFixed(2)}%`
+      }
+
+      function fmtPctReason(n) {
+        return `${(Number(n) * 100).toFixed(2)}%`
+      }
+
+      function formatYm(ym, offsetMonths) {
+        const [year, month] = String(ym || '')
+          .split('-')
+          .map(Number)
+        if (!year || !month) return ''
+        const zeroBased = year * 12 + month - 1 + offsetMonths
+        const y = Math.floor(zeroBased / 12)
+        const m = (zeroBased % 12) + 1
+        return `${y}年${String(m).padStart(2, '0')}月`
+      }
+
+      function currentYmLabel() {
+        const now = new Date()
+        return `${now.getFullYear()}年${String(now.getMonth() + 1).padStart(2, '0')}月`
+      }
+
+      function toYmValue(year, month) {
+        if (!year || !month) return ''
+        return `${year}-${String(month).padStart(2, '0')}`
+      }
+
+      function ymToIndex(ym) {
+        const [year, month] = String(ym || '')
+          .split('-')
+          .map(Number)
+        if (!year || !month) return null
+        return year * 12 + month - 1
+      }
+
+      function addMonthsToYm(ym, offsetMonths) {
+        const index = ymToIndex(ym)
+        if (index === null) return ''
+        const next = index + offsetMonths
+        return toYmValue(Math.floor(next / 12), (next % 12) + 1)
+      }
+
+      function periodFromYm(ym) {
+        const first = ymToIndex(document.getElementById('firstMonth').value)
+        const current = ymToIndex(ym)
+        if (first === null || current === null) return 0
+        return current - first + 1
+      }
+
+      function ymFromPeriod(period) {
+        const p = Number(period)
+        if (!p || p < 1) return ''
+        return addMonthsToYm(document.getElementById('firstMonth').value, p - 1)
+      }
+
+      function initYmPicker(picker, value = '') {
+        const yearSelect = picker.querySelector('.ym-year')
+        const monthSelect = picker.querySelector('.ym-month')
+        const currentYear = new Date().getFullYear()
+        const selectedIndex = ymToIndex(value)
+        const selectedYear = selectedIndex === null ? '' : Math.floor(selectedIndex / 12)
+        const selectedMonth = selectedIndex === null ? '' : (selectedIndex % 12) + 1
+        yearSelect.innerHTML = '<option value="">年份</option>'
+        monthSelect.innerHTML = '<option value="">月份</option>'
+        for (let y = currentYear - 10; y <= currentYear + 40; y++) {
+          yearSelect.insertAdjacentHTML('beforeend', `<option value="${y}"${y === selectedYear ? ' selected' : ''}>${y}</option>`)
+        }
+        for (let m = 1; m <= 12; m++) {
+          monthSelect.insertAdjacentHTML('beforeend', `<option value="${m}"${m === selectedMonth ? ' selected' : ''}>${m}月</option>`)
+        }
+      }
+
+      function getYmFromPicker(picker) {
+        return toYmValue(picker.querySelector('.ym-year').value, picker.querySelector('.ym-month').value)
+      }
+
+      function syncFirstMonthFromPicker() {
+        document.getElementById('firstMonth').value = getYmFromPicker(document.getElementById('firstMonthPicker'))
+      }
+
+      function val(id) {
+        return Number(document.getElementById(id).value) || 0
+      }
+      function hasValue(v) {
+        return String(v ?? '').trim() !== ''
+      }
+
+      function parseNumOrNull(v) {
+        if (v === null || v === undefined) return null
+        const t = String(v).trim()
+        if (!t) return null
+        const n = Number(t)
+        return Number.isFinite(n) ? n : null
+      }
+
+      function parsePercentInputToDecimal(v) {
+        const n = parseNumOrNull(v)
+        if (n === null) return null
+        return n / 100
+      }
+
+      function upsertExtraPlan(ym, commercial = '', fund = '') {
+        if (!hasValue(ym)) return
+        const current = extraPlanMap.get(ym) || { commercial: '', fund: '' }
+        const nextCommercial = hasValue(commercial) ? String(commercial).trim() : current.commercial
+        const nextFund = hasValue(fund) ? String(fund).trim() : current.fund
+        if (!hasValue(nextCommercial) && !hasValue(nextFund)) {
+          extraPlanMap.delete(ym)
+          return
+        }
+        extraPlanMap.set(ym, { commercial: nextCommercial, fund: nextFund })
+      }
+
+      function formatYmText(ym) {
+        const [year, month] = String(ym || '')
+          .split('-')
+          .map(Number)
+        if (!year || !month) return ''
+        return `${year}年${String(month).padStart(2, '0')}月`
+      }
+
+      function getLoanYmBounds() {
+        const firstMonth = document.getElementById('firstMonth').value
+        const months = Math.max(0, Math.floor(val('months')))
+        if (!firstMonth || months <= 0) return { start: null, end: null }
+        return { start: firstMonth, end: addMonthsToYm(firstMonth, months - 1) }
+      }
+
+      function isYmInLoanRange(ym) {
+        const bounds = getLoanYmBounds()
+        const target = ymToIndex(ym)
+        const start = ymToIndex(bounds.start)
+        const end = ymToIndex(bounds.end)
+        if (target === null || start === null || end === null) return false
+        return target >= start && target <= end
+      }
+
+      function getRatePlanEntries() {
+        return Array.from(ratePlanMap.entries())
+          .map(([ym, item]) => ({ ym, rc: item.rc || '', rf: item.rf || '' }))
+          .sort((a, b) => ymToIndex(a.ym) - ymToIndex(b.ym))
+      }
+
+      function getRatePlans() {
+        const plans = []
+        getRatePlanEntries().forEach((entry) => {
+          const month = periodFromYm(entry.ym)
+          const rc = parsePercentInputToDecimal(entry.rc)
+          const rf = parsePercentInputToDecimal(entry.rf)
+          if (month > 0 && (rc !== null || rf !== null)) plans.push({ month, rc, rf })
+        })
+        return plans
+      }
+
+      function refreshEditorInputHighlights() {
+        const ids = ['rateEditCommercial', 'rateEditFund', 'extraEditCommercial', 'extraEditFund']
+        ids.forEach((id) => {
+          const input = document.getElementById(id)
+          if (!input) return
+          input.classList.toggle('has-value', hasValue(input.value))
+        })
+      }
+
+      function setModalYm(ym) {
+        const targetYm = hasValue(ym) ? ym : document.getElementById('firstMonth').value
+        selectedRatePlanYm = targetYm
+        selectedExtraPlanYm = targetYm
+        initYmPicker(document.getElementById('modalMonthPicker'), targetYm)
+      }
+
+      function loadRateEditor(ym) {
+        selectedRatePlanYm = ym || ''
+        const existing = ratePlanMap.get(selectedRatePlanYm) || { rc: '', rf: '' }
+        document.getElementById('rateEditCommercial').value = existing.rc
+        document.getElementById('rateEditFund').value = existing.rf
+        refreshEditorInputHighlights()
+      }
+
+      function renderRatePlanCalendar() {}
+
+      function saveSelectedRatePlan() {
+        const ym = getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) {
+          alert('请先选择要编辑的月份。')
+          return
+        }
+        let rc = document.getElementById('rateEditCommercial').value.trim()
+        let rf = document.getElementById('rateEditFund').value.trim()
+        if (!hasValue(rc) && !hasValue(rf)) ratePlanMap.delete(ym)
+        else ratePlanMap.set(ym, { rc, rf })
+        loadRateEditor(ym)
+        calc(true)
+      }
+
+      function removeSelectedRatePlan(targetYm) {
+        const ym = targetYm || getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) return
+        ratePlanMap.delete(ym)
+        loadRateEditor(ym)
+        calc(true)
+      }
+
+      function initRatePlanCalendar() {
+        const firstMonth = document.getElementById('firstMonth').value
+        const firstIndex = ymToIndex(firstMonth)
+        if (firstIndex !== null) ratePlanCalendarYear = Math.floor(firstIndex / 12)
+        const initialYm = firstMonth || toYmValue(ratePlanCalendarYear, 1)
+        loadRateEditor(initialYm)
+      }
+
+      function getExtraPlanEntries() {
+        return Array.from(extraPlanMap.entries())
+          .map(([ym, item]) => ({ ym, commercial: item.commercial || '', fund: item.fund || '' }))
+          .sort((a, b) => ymToIndex(a.ym) - ymToIndex(b.ym))
+      }
+
+      function loadExtraEditor(ym) {
+        selectedExtraPlanYm = ym || ''
+        const existing = extraPlanMap.get(selectedExtraPlanYm) || { commercial: '', fund: '' }
+        document.getElementById('extraEditCommercial').value = existing.commercial
+        document.getElementById('extraEditFund').value = existing.fund
+        refreshEditorInputHighlights()
+      }
+
+      function saveSelectedExtraPlan() {
+        const ym = getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) {
+          alert('请先选择要编辑的月份。')
+          return
+        }
+        let commercial = document.getElementById('extraEditCommercial').value.trim()
+        let fund = document.getElementById('extraEditFund').value.trim()
+        if (!hasValue(commercial) && !hasValue(fund)) extraPlanMap.delete(ym)
+        else upsertExtraPlan(ym, commercial, fund)
+        loadExtraEditor(ym)
+        selectedRatePlanYm = ym
+        const ymIndex = ymToIndex(ym)
+        if (ymIndex !== null) ratePlanCalendarYear = Math.floor(ymIndex / 12)
+        calc(true)
+      }
+
+      function removeSelectedExtraPlan(targetYm) {
+        const ym = targetYm || getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) return
+        extraPlanMap.delete(ym)
+        loadExtraEditor(ym)
+        calc(true)
+      }
+
+      function initExtraPlanCalendar() {
+        const firstMonth = document.getElementById('firstMonth').value
+        const initialYm = firstMonth || toYmValue(ratePlanCalendarYear, 1)
+        loadExtraEditor(initialYm)
+      }
+      function openMonthPlanModal(ym) {
+        const targetYm = hasValue(ym) ? ym : document.getElementById('firstMonth').value
+        setModalYm(targetYm)
+        loadRateEditor(targetYm)
+        loadExtraEditor(targetYm)
+        document.getElementById('monthPlanModal').hidden = false
+      }
+
+      function closeMonthPlanModal() {
+        document.getElementById('monthPlanModal').hidden = true
+      }
+
+      function saveCurrentMonthPlans() {
+        const ym = getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) {
+          alert('请先选择要编辑的月份。')
+          return
+        }
+
+        let rc = document.getElementById('rateEditCommercial').value.trim()
+        let rf = document.getElementById('rateEditFund').value.trim()
+        if (!hasValue(rc) && !hasValue(rf)) {
+          ratePlanMap.delete(ym)
+        } else {
+          ratePlanMap.set(ym, { rc, rf })
+        }
+
+        let commercial = document.getElementById('extraEditCommercial').value.trim()
+        let fund = document.getElementById('extraEditFund').value.trim()
+        if (!hasValue(commercial) && !hasValue(fund)) {
+          extraPlanMap.delete(ym)
+        } else {
+          upsertExtraPlan(ym, commercial, fund)
+        }
+
+        loadRateEditor(ym)
+        loadExtraEditor(ym)
+        calc(true)
+      }
+
+      function removeCurrentMonthPlans() {
+        const ym = getYmFromPicker(document.getElementById('modalMonthPicker'))
+        if (!hasValue(ym)) return
+        ratePlanMap.delete(ym)
+        extraPlanMap.delete(ym)
+        loadRateEditor(ym)
+        loadExtraEditor(ym)
+        calc(true)
+      }
+
+      function getExtraPlanMap() {
+        const map = new Map()
+        getExtraPlanEntries().forEach((entry) => {
+          const m = periodFromYm(entry.ym)
+          const commercial = parseNumOrNull(entry.commercial) || 0
+          const fund = parseNumOrNull(entry.fund) || 0
+          if (m > 0 && (commercial > 0 || fund > 0)) {
+            map.set(m, { commercial, fund })
+          }
+        })
+        return map
+      }
+
+      function resolveRate(baseRate, plans, month, key) {
+        let rate = baseRate
+        for (const p of plans) {
+          if (p.month > month) break
+          if (p[key] !== null) rate = p[key]
+        }
+        return rate
+      }
+
+      function isRateChangedThisMonth(baseRate, plans, month, key) {
+        const prev = month <= 1 ? baseRate : resolveRate(baseRate, plans, month - 1, key)
+        const curr = resolveRate(baseRate, plans, month, key)
+        return Math.abs(curr - prev) > 1e-12
+      }
+
+      function splitExtraPayment(extraPlan, commercialBalanceCents, fundBalanceCents) {
+        const requestedCommercialCents = toCents(extraPlan?.commercial || 0)
+        const requestedFundCents = toCents(extraPlan?.fund || 0)
+        let commercialCents = requestedCommercialCents
+        let fundCents = requestedFundCents
+
+        return {
+          commercialCents: Math.min(commercialBalanceCents, commercialCents),
+          fundCents: Math.min(fundBalanceCents, fundCents),
+        }
+      }
+
+      function validateCalcInputs() {
+        const rateCommercial = document.getElementById('rateCommercial').value
+        const balCommercial = document.getElementById('balCommercial').value
+        const rateFund = document.getElementById('rateFund').value
+        const balFund = document.getElementById('balFund').value
+
+        if (hasValue(rateCommercial) !== hasValue(balCommercial)) {
+          return { ok: false, message: '商贷年利率与商贷贷款余额需要配对填写。' }
+        }
+        if (hasValue(rateFund) !== hasValue(balFund)) {
+          return { ok: false, message: '公积金年利率与公积金贷款余额需要配对填写。' }
+        }
+
+        for (const entry of getRatePlanEntries()) {
+          const month = entry.ym
+          const rc = entry.rc
+          const rf = entry.rf
+          const hasMonth = hasValue(month)
+          const hasRate = hasValue(rc) || hasValue(rf)
+          if (hasMonth !== hasRate) {
+            return { ok: false, message: '利率调整计划中，调整年月与新利率需要配对填写。' }
+          }
+        }
+
+        for (const entry of getExtraPlanEntries()) {
+          const hasMonth = hasValue(entry.ym)
+          const hasAmount = hasValue(entry.commercial) || hasValue(entry.fund)
+          if (hasMonth !== hasAmount) return { ok: false, message: '提前还款计划中，还款年月与金额需要配对填写。' }
+        }
+
+        return { ok: true, message: '' }
+      }
+
+      function calc(silent = false) {
+        const valid = validateCalcInputs()
+        if (!valid.ok) {
+          if (!silent) alert(valid.message)
+          return
+        }
+
+        syncFirstMonthFromPicker()
+        renderRatePlanCalendar()
+        const months = Math.max(0, Math.floor(val('months')))
+        const firstMonth = document.getElementById('firstMonth').value
+        const repaymentMethod = document.getElementById('repaymentMethod').value
+        const rc = val('rateCommercial') / 100
+        const rf = val('rateFund') / 100
+        let bcCents = Math.max(0, toCents(val('balCommercial')))
+        let bfCents = Math.max(0, toCents(val('balFund')))
+        const hasCommercial = bcCents > 0 || bfCents <= 0
+        const hasFund = bfCents > 0 || bcCents <= 0
+        const extraMap = getExtraPlanMap()
+        const ratePlans = getRatePlans()
+
+        const principal0Cents = bcCents + bfCents
+        const principal0 = fromCents(principal0Cents)
+        let paidInterestCents = 0
+        const rows = []
+
+        if (months <= 0 || principal0 <= 0) {
+          render(rows, principal0, fromCents(paidInterestCents), hasCommercial, hasFund)
+          return
+        }
+
+        for (let i = 1; i <= months; i++) {
+          const remainMonths = months - i + 1
+          const rcNow = resolveRate(rc, ratePlans, i, 'rc')
+          const rfNow = resolveRate(rf, ratePlans, i, 'rf')
+          const extraSplit = splitExtraPayment(extraMap.get(i), bcCents, bfCents)
+          const extraThisMonthCents = extraSplit.commercialCents + extraSplit.fundCents
+          const rcChanged = isRateChangedThisMonth(rc, ratePlans, i, 'rc')
+          const rfChanged = isRateChangedThisMonth(rf, ratePlans, i, 'rf')
+          const extraChanged = extraThisMonthCents > 0
+          const hasChange = extraChanged || rcChanged || rfChanged
+
+          const commercial = calcLoanPeriod(repaymentMethod, bcCents, rcNow, remainMonths)
+          const fund = calcLoanPeriod(repaymentMethod, bfCents, rfNow, remainMonths)
+          const monthPayCents = commercial.paymentCents + fund.paymentCents
+          const monthIntCents = commercial.interestCents + fund.interestCents
+          const monthPrinCents = commercial.principalCents + fund.principalCents
+
+          bcCents = Math.max(0, bcCents - commercial.principalCents - extraSplit.commercialCents)
+          bfCents = Math.max(0, bfCents - fund.principalCents - extraSplit.fundCents)
+
+          const remainLoanCents = bcCents + bfCents
+          const displayRemainMonths = months - i
+          paidInterestCents += monthIntCents
+
+          rows.push({
+            month: i,
+            monthYm: addMonthsToYm(firstMonth, i - 1),
+            monthDateLabel: formatYm(firstMonth, i - 1),
+            remainMonths: displayRemainMonths,
+            rcNow,
+            rfNow,
+            prevRc: rcChanged ? resolveRate(rc, ratePlans, i - 1, 'rc') : rcNow,
+            prevRf: rfChanged ? resolveRate(rf, ratePlans, i - 1, 'rf') : rfNow,
+            hasChange,
+            rcChanged,
+            rfChanged,
+            extraChanged,
+            commercialExtra: fromCents(extraSplit.commercialCents),
+            fundExtra: fromCents(extraSplit.fundCents),
+            bc: fromCents(bcCents),
+            mc: fromCents(commercial.paymentCents),
+            ic: fromCents(commercial.interestCents),
+            pc: fromCents(commercial.principalCents),
+            bf: fromCents(bfCents),
+            mf: fromCents(fund.paymentCents),
+            inf: fromCents(fund.interestCents),
+            pf: fromCents(fund.principalCents),
+            monthPay: fromCents(monthPayCents),
+            monthInt: fromCents(monthIntCents),
+            monthPrin: fromCents(monthPrinCents),
+            remainLoan: fromCents(remainLoanCents),
+            paidPrincipal: fromCents(principal0Cents - remainLoanCents),
+            paidInterest: fromCents(paidInterestCents),
+            remainPI: fromCents(monthPayCents * displayRemainMonths),
+          })
+
+          if (remainLoanCents <= 0) break
+        }
+
+        render(rows, principal0, fromCents(paidInterestCents), hasCommercial, hasFund)
+      }
+
+      function renderTableHeader(hasCommercial, hasFund) {
+        const groups = []
+        const subs = []
+        const showTotalMonthPay = hasCommercial && hasFund
+        const showRemainLoan = true
+        const showGroupBalance = hasCommercial && hasFund
+        const overviewCols = (showTotalMonthPay ? 1 : 0) + (showRemainLoan ? 1 : 0) + 2
+        if (hasCommercial) {
+          groups.push(`<th colspan="${showGroupBalance ? 4 : 3}" class="h-divider">商贷</th>`)
+          if (showGroupBalance) subs.push('<th>剩余贷款</th>')
+          subs.push('<th>月供</th>')
+          subs.push('<th>利息</th>')
+          subs.push('<th class="h-divider key-col">还本金</th>')
+        }
+        if (hasFund) {
+          groups.push(`<th colspan="${showGroupBalance ? 4 : 3}" class="h-divider">公积金</th>`)
+          if (showGroupBalance) subs.push('<th>剩余贷款</th>')
+          subs.push('<th>月供</th>')
+          subs.push('<th>利息</th>')
+          subs.push('<th class="h-divider key-col">还本金</th>')
+        }
+        groups.push(`<th colspan="${overviewCols}">总览</th>`)
+        if (showTotalMonthPay) subs.push('<th class="key-col">月供</th>')
+        if (showRemainLoan) subs.push('<th>剩余贷款</th>')
+        subs.push('<th class="key-col">剩余利息</th>')
+        subs.push('<th class="key-col">总还款</th>')
+
+        document.getElementById('resultHead').innerHTML = `
+          <tr>
+            <th rowspan="2" id="toggleMonthDisplay" class="h-divider month-header-toggle" title="点击切换期数/年月；hover 查看余期与变更原因">
+              <span class="month-header-main">${showMonthDate ? '还款年月' : '还款期'}</span>
+            </th>
+            ${groups.join('')}
+          </tr>
+          <tr>${subs.join('')}</tr>
+        `
+      }
+
+      function render(data, principal0, totalInterest, hasCommercial, hasFund) {
+        renderTableHeader(hasCommercial, hasFund)
+        const showTotalMonthPay = hasCommercial && hasFund
+        const showRemainLoan = true
+        const showGroupBalance = hasCommercial && hasFund
+        const totalPay = round2(principal0 + totalInterest)
+        const repaymentMonths = data.filter((r) => r.month > 0).length
+        document.getElementById('kpi').innerHTML = `
+        <div class="k">总贷款本金<b>${fmt(principal0)}</b></div>
+        <div class="k">总支付利息<b>${fmt(totalInterest)}</b></div>
+        <div class="k">总还款额<b>${fmt(totalPay)}</b></div>
+        <div class="k">实际还款月数<b>${repaymentMonths}</b></div>
+      `
+
+        document.getElementById('rows').innerHTML = data
+          .map((r) => {
+            const rateChanged = (hasCommercial && r.rcChanged) || (hasFund && r.rfChanged)
+            const commercialExtraReason = hasCommercial && r.commercialExtra > 0 ? `商贷提前还款：${fmt(r.commercialExtra)}` : ''
+            const fundExtraReason = hasFund && r.fundExtra > 0 ? `公积金提前还款：${fmt(r.fundExtra)}` : ''
+            const remainInterest = round2(Math.max(0, totalInterest - (Number(r.paidInterest) || 0)))
+            const paidPI = round2((Number(r.paidPrincipal) || 0) + (Number(r.paidInterest) || 0))
+            const changeReasons = [
+              hasCommercial && r.rcChanged ? `商贷利率调整：${fmtPctReason(r.prevRc)} → ${fmtPctReason(r.rcNow)}` : '',
+              hasFund && r.rfChanged ? `公积金利率调整：${fmtPctReason(r.prevRf)} → ${fmtPctReason(r.rfNow)}` : '',
+              commercialExtraReason,
+              fundExtraReason,
+            ].filter(Boolean)
+            const hasVisibleChange = changeReasons.length > 0
+            const titleAttr = (items) => {
+              const title = [...new Set(items.filter(Boolean))].join('\n')
+              return title ? ` title="${title}"` : ''
+            }
+            const rowTitle = titleAttr(changeReasons)
+            const monthTitle = titleAttr([`余期：${r.remainMonths}`, ...changeReasons])
+            const commercialBalanceTitle = titleAttr([commercialExtraReason, ...changeReasons])
+            const fundBalanceTitle = titleAttr([fundExtraReason, ...changeReasons])
+            const isCurrentMonth = r.monthDateLabel === currentYmLabel()
+
+            const cells = []
+            if (hasCommercial) {
+              if (showGroupBalance) cells.push(`<td class="${r.commercialExtra > 0 ? 'extra-balance-cell' : ''}"${commercialBalanceTitle}>${fmt(r.bc)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.mc)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.ic)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.pc)}</td>`)
+            }
+            if (hasFund) {
+              if (showGroupBalance) cells.push(`<td class="${r.fundExtra > 0 ? 'extra-balance-cell' : ''}"${fundBalanceTitle}>${fmt(r.bf)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.mf)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.inf)}</td>`)
+              cells.push(`<td${rowTitle}>${fmt(r.pf)}</td>`)
+            }
+            if (showTotalMonthPay) cells.push(`<td${rowTitle}>${fmt(r.monthPay)}</td>`)
+            if (showRemainLoan) cells.push(`<td${rowTitle}>${fmt(r.remainLoan)}</td>`)
+            cells.push(`<td${rowTitle}>${fmt(remainInterest)}</td>`)
+            cells.push(`<td${rowTitle}>${fmt(paidPI)}</td>`)
+
+            return `
+        <tr class="${hasVisibleChange ? 'changed-row ' : ''}${isCurrentMonth ? 'current-month-row' : ''}">
+          <td class="repay-month ${rateChanged ? 'changed-cell' : ''}" data-ym="${r.monthYm}" data-default="第${r.month}期" data-date="${r.monthDateLabel}"${monthTitle}>
+            <span class="repay-month-main">${showMonthDate ? r.monthDateLabel : `第${r.month}期`}</span>
+          </td>
+          ${cells.join('')}
+        </tr>
+      `
+          })
+          .join('')
+        updateMonthDisplayButton()
+        updateExportButtonState()
+      }
+
+      function updateExportButtonState() {
+        const btn = document.getElementById('exportExcelBtn')
+        if (!btn) return
+        const hasRows = document.querySelectorAll('#rows tr').length > 0
+        btn.disabled = !hasRows
+      }
+
+      function updateMonthDisplayButton() {
+        const header = document.getElementById('toggleMonthDisplay')
+        if (!header) return
+        const label = header.querySelector('.month-header-main')
+        if (label) label.textContent = showMonthDate ? '还款年月' : '还款期'
+      }
+
+      function toggleMonthDisplay() {
+        showMonthDate = !showMonthDate
+        document.querySelectorAll('.repay-month').forEach((cell) => {
+          const label = cell.querySelector('.repay-month-main')
+          if (label) label.textContent = showMonthDate ? cell.dataset.date : cell.dataset.default
+        })
+        updateMonthDisplayButton()
+      }
+
+      function collectParams() {
+        syncFirstMonthFromPicker()
+        const extraPlans = getExtraPlanEntries().flatMap((entry) => {
+          const rows = []
+          if (hasValue(entry.commercial)) rows.push({ ym: entry.ym, month: periodFromYm(entry.ym), loanType: 'commercial', amount: entry.commercial })
+          if (hasValue(entry.fund)) rows.push({ ym: entry.ym, month: periodFromYm(entry.ym), loanType: 'fund', amount: entry.fund })
+          return rows
+        })
+        const ratePlans = getRatePlanEntries().map((entry) => ({
+          ym: entry.ym,
+          month: periodFromYm(entry.ym),
+          commercialRate: entry.rc,
+          fundRate: entry.rf,
+        }))
+
+        return {
+          version: 1,
+          savedAt: new Date().toISOString(),
+          base: {
+            months: document.getElementById('months').value,
+            firstMonth: document.getElementById('firstMonth').value,
+            repaymentMethod: document.getElementById('repaymentMethod').value,
+            rateCommercial: document.getElementById('rateCommercial').value,
+            balCommercial: document.getElementById('balCommercial').value,
+            rateFund: document.getElementById('rateFund').value,
+            balFund: document.getElementById('balFund').value,
+          },
+          extraPlans,
+          ratePlans,
+        }
+      }
+
+      function getParamsFileName() {
+        const raw = document.getElementById('paramsFileName').value.trim() || 'mortgage-params.json'
+        const safe = raw.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '_')
+        return safe.toLowerCase().endsWith('.json') ? safe : `${safe}.json`
+      }
+
+      async function saveParamsJson() {
+        const content = JSON.stringify(collectParams(), null, 2)
+        const fileName = getParamsFileName()
+        const blob = new Blob([content], { type: 'application/json' })
+
+        if ('showSaveFilePicker' in window) {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: fileName,
+              types: [
+                {
+                  description: 'JSON 参数文件',
+                  accept: { 'application/json': ['.json'] },
+                },
+              ],
+            })
+            const writable = await handle.createWritable()
+            await writable.write(blob)
+            await writable.close()
+            return
+          } catch (error) {
+            if (error?.name === 'AbortError') return
+          }
+        }
+
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = fileName
+        link.click()
+        URL.revokeObjectURL(link.href)
+      }
+
+      function buildExportTableHtml() {
+        const table = document.querySelector('.result-table')
+        if (!table) return ''
+        const clone = table.cloneNode(true)
+        clone.querySelectorAll('[title]').forEach((node) => node.removeAttribute('title'))
+        return clone.outerHTML
+      }
+
+      function exportReportExcel() {
+        updateExportButtonState()
+        if (document.getElementById('exportExcelBtn')?.disabled) return
+        const tableHtml = buildExportTableHtml()
+        if (!tableHtml) {
+          alert('暂无可导出的报表数据，请先计算。')
+          return
+        }
+        const workbookHtml = `<!doctype html>
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta charset="utf-8" />
+    <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>房贷报表</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+    <style>
+      table { border-collapse: collapse; width: 100%; font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif; font-size: 14px; table-layout: fixed; }
+      th, td { border: 1px solid #d6e2d8; padding: 6px 8px; text-align: right; vertical-align: middle; }
+      thead tr:first-child th { background: #dfeee2; color: #244734; font-weight: 700; text-align: center; }
+      thead tr:nth-child(2) th { background: #eff6f0; color: #345a45; font-weight: 600; }
+      thead th[rowspan="2"] { text-align: center; }
+      tbody td:first-child { text-align: center; }
+      .changed-row td { background: #fff5d8; }
+      .current-month-row td { background: #e8f5ff; }
+      .changed-cell, .extra-balance-cell { background: #ffe08a !important; font-weight: 700; color: #5a3b00; }
+    </style>
+  </head>
+  <body>${tableHtml}</body>
+</html>`
+        const blob = new Blob([`\ufeff${workbookHtml}`], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+        const firstMonth = document.getElementById('firstMonth').value || 'report'
+        const fileName = `mortgage-report-${firstMonth}.xls`
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+        link.download = fileName
+        link.click()
+        URL.revokeObjectURL(link.href)
+      }
+
+      function applyParams(params) {
+        const base = params.base || {}
+        document.getElementById('months').value = base.months || ''
+        document.getElementById('firstMonth').value = base.firstMonth || ''
+        initYmPicker(document.getElementById('firstMonthPicker'), base.firstMonth || '')
+        document.getElementById('repaymentMethod').value = base.repaymentMethod || 'equalInstallment'
+        document.getElementById('rateCommercial').value = base.rateCommercial || ''
+        document.getElementById('balCommercial').value = base.balCommercial || ''
+        document.getElementById('rateFund').value = base.rateFund || ''
+        document.getElementById('balFund').value = base.balFund || ''
+
+        extraPlanMap.clear()
+        ;(params.extraPlans || []).forEach((plan) => {
+          const ym = plan.ym || ymFromPeriod(plan.month)
+          if (!hasValue(ym)) return
+          if (plan.loanType === 'commercial') upsertExtraPlan(ym, plan.amount || '', '')
+          else if (plan.loanType === 'fund') upsertExtraPlan(ym, '', plan.amount || '')
+          else {
+            const c = String(plan.commercialAmount || '').trim()
+            const f = String(plan.fundAmount || '').trim()
+            upsertExtraPlan(ym, c, f)
+          }
+        })
+        initExtraPlanCalendar()
+
+        ratePlanMap.clear()
+        ;(params.ratePlans || []).forEach((plan) => {
+          const ym = plan.ym || ymFromPeriod(plan.month)
+          if (!hasValue(ym)) return
+          const rc = String(plan.commercialRate || '').trim()
+          const rf = String(plan.fundRate || '').trim()
+          if (!hasValue(rc) && !hasValue(rf)) return
+          ratePlanMap.set(ym, { rc, rf })
+        })
+        initRatePlanCalendar()
+
+        calc(true)
+      }
+
+      function loadParamsJson(file) {
+        if (!file) return
+        document.getElementById('paramsFileName').value = file.name || ''
+        const reader = new FileReader()
+        reader.addEventListener('load', () => {
+          try {
+            applyParams(JSON.parse(reader.result))
+          } catch {
+            alert('参数 JSON 读取失败，请确认文件格式正确。')
+          }
+        })
+        reader.readAsText(file)
+      }
+
+      document.getElementById('calcBtn').addEventListener('click', () => calc(false))
+      document.getElementById('exportExcelBtn').addEventListener('click', exportReportExcel)
+      document.getElementById('saveParamsBtn').addEventListener('click', saveParamsJson)
+      document.getElementById('loadParamsBtn').addEventListener('click', () => {
+        document.getElementById('loadParamsInput').click()
+      })
+      document.getElementById('loadParamsInput').addEventListener('change', (event) => {
+        loadParamsJson(event.target.files[0])
+        event.target.value = ''
+      })
+      initYmPicker(document.getElementById('firstMonthPicker'))
+      document.querySelectorAll('#firstMonthPicker select').forEach((select) => {
+        select.addEventListener('change', () => {
+          syncFirstMonthFromPicker()
+          const firstIndex = ymToIndex(document.getElementById('firstMonth').value)
+          if (firstIndex !== null) ratePlanCalendarYear = Math.floor(firstIndex / 12)
+          if (!hasValue(selectedRatePlanYm)) selectedRatePlanYm = document.getElementById('firstMonth').value
+          if (!hasValue(selectedExtraPlanYm)) selectedExtraPlanYm = document.getElementById('firstMonth').value
+          setModalYm(document.getElementById('firstMonth').value)
+          loadRateEditor(selectedRatePlanYm)
+          loadExtraEditor(selectedExtraPlanYm)
+          calc(true)
+        })
+      })
+      document.getElementById('repaymentMethod').addEventListener('change', () => calc(true))
+      document.getElementById('resultHead').addEventListener('click', (event) => {
+        if (event.target.closest('#toggleMonthDisplay')) toggleMonthDisplay()
+      })
+      document.getElementById('rows').addEventListener('click', (event) => {
+        const cell = event.target.closest('.repay-month')
+        if (!cell) return
+        openMonthPlanModal(cell.dataset.ym)
+      })
+      document.querySelectorAll('#modalMonthPicker select').forEach((select) => {
+        select.addEventListener('change', () => {
+          const ym = getYmFromPicker(document.getElementById('modalMonthPicker'))
+          if (!hasValue(ym)) return
+          setModalYm(ym)
+          loadRateEditor(ym)
+          loadExtraEditor(ym)
+        })
+      })
+      document.querySelectorAll('#rateEditCommercial,#rateEditFund,#extraEditCommercial,#extraEditFund').forEach((input) => {
+        input.addEventListener('input', refreshEditorInputHighlights)
+      })
+      document.getElementById('saveMonthPlanBtn').addEventListener('click', saveCurrentMonthPlans)
+      document.getElementById('removeMonthPlanBtn').addEventListener('click', removeCurrentMonthPlans)
+      document.getElementById('monthPlanModalCloseTop').addEventListener('click', closeMonthPlanModal)
+      document.getElementById('monthPlanModal').addEventListener('click', (event) => {
+        if (event.target.id === 'monthPlanModal') closeMonthPlanModal()
+      })
+      initRatePlanCalendar()
+      initExtraPlanCalendar()
+      setModalYm(document.getElementById('firstMonth').value)
+      updateExportButtonState()
+      calc(true)
+    </script>
+  </body>
+</html>
